@@ -41,4 +41,8 @@ export class ProfilesController {
       ...updateProfileDto,
     };
   }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id') id: string) {}
 }
