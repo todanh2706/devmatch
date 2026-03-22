@@ -1,31 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import type { CreateProfileDto } from './dto/create-profile.dto';
+import { UUID } from 'crypto';
+import { CreateProfileDto } from './dto/create-profile.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Profile } from './profile.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ProfilesService {
-  private profiles = [
-    {
-      id: randomUUID(),
-      name: 'Danh',
-      description: 'Handsome man',
-    },
-    {
-      id: randomUUID(),
-      name: 'Vy',
-      description: 'Beautiful girl',
-    },
-  ];
+  //   private profiles = [
+  //     {
+  //       id: randomUUID(),
+  //       name: 'Danh',
+  //       description: 'Handsome man',
+  //     },
+  //     {
+  //       id: randomUUID(),
+  //       name: 'Vy',
+  //       description: 'Beautiful girl',
+  //     },
+  //   ];
 
-  findAll() {
-    return this.profiles;
+  constructor(
+    @InjectRepository(Profile)
+    private profileRepository: Repository<Profile>,
+  ) {}
+
+  async findAll(): Promise<Profile[]> {
+    // return this.profiles.find();
+    return await this.profileRepository.find();
   }
 
-  findOne(id: string) {
-    const matchingProfile = this.profiles.find((profile) => profile.id === id);
+  async findOne(id: UUID): Promise<Profile> {
+    // const matchingProfile = this.profiles.find((profile) => profile.id === id);
+    const matchingProfile = await this.profileRepository.findOneBy({ id });
 
-    if (!matchingProfile) {
+    if (matchingProfile === null) {
       //   throw new NotFoundException(`Profile with ID ${id} not found.`);
 
       throw new Error(`Profile with ID ${id} not found.`);
@@ -34,40 +44,48 @@ export class ProfilesService {
     return matchingProfile;
   }
 
-  create(creatProfileDto: CreateProfileDto) {
-    const createdProfile = {
-      id: randomUUID(),
-      ...creatProfileDto,
-    };
+  async create(createProfileDto: CreateProfileDto): Promise<Profile> {
+    // const createdProfile = {
+    //   id: randomUUID(),
+    //   ...creatProfileDto,
+    // };
 
-    this.profiles.push(createdProfile);
-    return createdProfile;
+    // this.profiles.push(createdProfile);
+    const newProfile = this.profileRepository.create(createProfileDto);
+    return await this.profileRepository.save(newProfile);
   }
 
-  update(id: string, updateProfileDto: UpdateProfileDto) {
-    const matchingProfile = this.profiles.find(
-      (existingProfile) => existingProfile.id === id,
-    );
+  async update(id: UUID, updateProfileDto: UpdateProfileDto): Promise<Profile> {
+    // const matchingProfile = this.profiles.find(
+    //   (existingProfile) => existingProfile.id === id,
+    // );
+    const matchingProfile = await this.profileRepository.findOneBy({ id });
 
-    if (!matchingProfile) {
+    if (matchingProfile === null) {
       throw new NotFoundException(`Profile with ID ${id} not found.`);
     }
 
     matchingProfile.name = updateProfileDto.name;
     matchingProfile.description = updateProfileDto.description;
 
-    return matchingProfile;
+    return await this.profileRepository.save(matchingProfile);
   }
 
-  remove(id: string): void {
-    const matchingProfileIndex = this.profiles.findIndex(
-      (existingProfile) => existingProfile.id === id,
-    );
+  async remove(id: UUID): Promise<void> {
+    // const matchingProfileIndex = this.profiles.findIndex(
+    //   (existingProfile) => existingProfile.id === id,
+    // );
 
-    if (matchingProfileIndex === -1) {
+    const result = await this.profileRepository.delete(id);
+
+    // if (matchingProfile === null) {
+    //   throw new NotFoundException(`Profile with ID ${id} not found.`);
+    // }
+
+    if (result.affected === 0) {
       throw new NotFoundException(`Profile with ID ${id} not found.`);
     }
 
-    this.profiles.splice(matchingProfileIndex, 1);
+    // this.profiles.splice(matchingProfileIndex, 1);
   }
 }
